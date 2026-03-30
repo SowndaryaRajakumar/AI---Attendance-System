@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendoAI - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1 id="welcomeGreeting">Welcome</h1>
+        <p>You are logged in as <span id="userRole" class="badge"></span></p>
+        
+        <div id="dashboard-content" class="dashboard-grid">
+            <!-- Dynamic Role Actions Inject Here -->
+        </div>
+
+        <h2 class="mt-4" style="margin-top: 3rem;">Recent Notifications</h2>
+        <div id="notifications-list" class="mt-4">
+             <p style="color:var(--text-muted)">Loading notifications...</p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const auth = requireAuth();
+            if(!auth) return;
+
+            document.getElementById('welcomeGreeting').textContent = `Welcome back, ${auth.user.name}!`;
+            document.getElementById('userRole').textContent = auth.user.role.toUpperCase();
+            
+            const roleBadge = document.getElementById('userRole');
+            roleBadge.classList.add(`badge-${auth.user.role}`);
+
+            const dashboardGrid = document.getElementById('dashboard-content');
+            
+            let htmlStr = `
+                <div class="stat-card" onclick="window.location.href='attendance.html'" style="cursor:pointer; border-color:var(--text-muted);">
+                    <h3 style="color:var(--text-main);">Check Stats</h3>
+                    <p>View your classes, insights, and predictions.</p>
+                </div>
+                <div class="stat-card" onclick="window.location.href='chat.html'" style="cursor:pointer; border-color:var(--text-muted);">
+                    <h3 style="color:var(--text-main);">AI Chatbot</h3>
+                    <p>Ask questions about your dynamic attendance states.</p>
+                </div>
+            `;
+            
+            if (auth.user.role === 'faculty' || auth.user.role === 'admin') {
+                htmlStr += `
+                    <div class="stat-card" onclick="window.location.href='mark.html'" style="cursor:pointer; border-color:var(--primary);">
+                        <h3 style="color:var(--primary);">Mark Attendance</h3>
+                        <p>Register records for students.</p>
+                    </div>
+                `;
+            }
+
+            dashboardGrid.innerHTML = htmlStr;
+
+            // Load Notification Stream
+            try {
+                const notes = await apiFetch('/notifications');
+                const list = document.getElementById('notifications-list');
+                if (notes.length === 0) {
+                    list.innerHTML = `<p style="color:var(--text-muted)">No recent notifications found.</p>`;
+                } else {
+                    list.innerHTML = notes.map(n => `
+                        <div style="background:var(--bg-panel); padding:1.25rem; margin-bottom:1rem; border-radius:8px; border-left:4px solid ${n.type === 'warning' ? 'var(--error)' : 'var(--secondary)'};">
+                            <p style="color:white; margin-bottom:0.5rem; font-weight: 500;">${n.message}</p>
+                            <small style="color:var(--text-muted);">${new Date(n.timestamp).toLocaleString()}</small>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                document.getElementById('notifications-list').innerHTML = `<p style="color:var(--error);">Failed to load notifications: ${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

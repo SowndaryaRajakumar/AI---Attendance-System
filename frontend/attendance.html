@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendoAI - My Attendance</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Attendance Insights & Stats</h2>
+        
+        <div id="stats-container" class="hidden">
+            <div class="progress-circle" id="circleBar">
+                <div class="progress-inner">
+                    <span id="percentageText">0%</span>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Classes</div>
+                    <div class="stat-value" id="totalClasses">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Present</div>
+                    <div class="stat-value" id="presentClasses" style="color:var(--secondary);">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Absent</div>
+                    <div class="stat-value" id="absentClasses" style="color:var(--error);">0</div>
+                </div>
+            </div>
+
+            <div class="card mt-4" style="max-width:100%;">
+                <h3 style="color:var(--primary);">AI Analytical Insights</h3>
+                <ul id="insightsList" style="list-style:inside; color:var(--text-muted); line-height:1.8; margin-top:1rem;"></ul>
+            </div>
+        </div>
+        
+        <p id="loadingMsg" class="text-center mt-4">Loading your data...</p>
+        <p id="global-error" class="error-msg text-center mt-4"></p>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const auth = requireAuth();
+            if(!auth) return;
+
+            try {
+                const data = await apiFetch(`/insights?studentId=${auth.user.id}`);
+                
+                document.getElementById('loadingMsg').classList.add('hidden');
+                document.getElementById('stats-container').classList.remove('hidden');
+
+                const summary = data.summary;
+                document.getElementById('totalClasses').textContent = summary.total;
+                document.getElementById('presentClasses').textContent = summary.present;
+                document.getElementById('absentClasses').textContent = summary.absent;
+                document.getElementById('percentageText').textContent = `${summary.percentage}%`;
+
+                // Update Radial bar chart CSS dynamically based on %
+                const circle = document.getElementById('circleBar');
+                const deg = (summary.percentage / 100) * 360;
+                let color = 'var(--secondary)';
+                if (summary.total > 0 && summary.percentage < 75) color = 'var(--error)';
+                circle.style.background = `conic-gradient(${color} ${deg}deg, var(--bg-dark) 0deg)`;
+
+                // Print AI Rules Logic
+                const ul = document.getElementById('insightsList');
+                if(data.insights && data.insights.length > 0) {
+                    ul.innerHTML = data.insights.map(i => `<li>${i}</li>`).join('');
+                } else {
+                    ul.innerHTML = `<li>No insights generated yet. Note: If you have no classes recorded, your streak is protected.</li>`;
+                }
+            } catch (err) {
+                document.getElementById('loadingMsg').classList.add('hidden');
+                showError('global-error', "Failed to pull attendance data: " + err.message);
+            }
+        });
+    </script>
+</body>
+</html>

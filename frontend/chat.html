@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AttendoAI - AI Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>AI Attendance Strategist</h2>
+        <p class="mb-4 text-muted" style="color:var(--text-muted)">Need help analyzing your attendance or have questions? Just ask!</p>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    Hello! I'm AttendoAI. I have direct access to your college attendance history. How can I help you today?
+                </div>
+            </div>
+            
+            <form id="chatForm" class="chat-input" style="border:none;">
+                <input type="text" id="queryInput" required placeholder="Ex: 'How many classes can I miss safely?'">
+                <button type="submit" class="btn" id="sendBtn">Send Message</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const auth = requireAuth();
+            if(!auth) return;
+        });
+
+        const chatMessages = document.getElementById('chatMessages');
+        const chatForm = document.getElementById('chatForm');
+        const queryInput = document.getElementById('queryInput');
+        const sendBtn = document.getElementById('sendBtn');
+        
+        function appendMessage(text, type) {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = text;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return div; 
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const queryText = queryInput.value.trim();
+            if (!queryText) return;
+            
+            appendMessage(queryText, 'user');
+            queryInput.value = '';
+            
+            sendBtn.disabled = true;
+            queryInput.disabled = true;
+            const loadingMsgBlock = appendMessage('Processing database records...', 'ai');
+            
+            try {
+                const data = await apiFetch('/chat', 'POST', { query: queryText });
+                
+                loadingMsgBlock.textContent = data.response;
+                
+            } catch (err) {
+                loadingMsgBlock.textContent = "AI Communication Node Error: " + err.message;
+                loadingMsgBlock.style.color = "var(--error)";
+            } finally {
+                sendBtn.disabled = false;
+                queryInput.disabled = false;
+                queryInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>
