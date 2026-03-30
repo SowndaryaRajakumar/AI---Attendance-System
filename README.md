@@ -220,14 +220,3 @@ POST /chat
 * Admin dashboard
 
 ---
-
-## 👨‍💻 Author
-
-**Zee**
-Full Stack Developer (in progress 🚀)
-
----
-
-## ⭐ If you like this project
-
-Give it a star ⭐ on GitHub!
